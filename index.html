@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>High Tinker Mekkatorque Simulator</title>
+    <script src="https://cdn.jsdelivr.net/npm/mainloop.js@latest/build/mainloop.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.11/lodash.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mousetrap@1.6.2/mousetrap.min.js"></script>
+    <style type="text/css">
+        body { background-color: darkgrey; } 
+        div { display: flex; } 
+
+        .main {
+            position: relative;
+            flex-direction: column;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .actionbar {
+            position: relative;
+            margin-top: auto;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .actionbar button {
+            width: 50px;
+            height: 50px;
+            top: 50px;
+            position: absolute;
+            background: transparent;
+            color: transparent;
+            border: none;
+        }
+
+        .actionbar .red { left: 154px; }
+        .actionbar .purple { left: 218px; }
+        .actionbar .green { left: 282px; }
+        .actionbar .yellow { left: 344px; }
+        .actionbar .blue { left: 406px; }
+
+        .robots {
+            justify-content: center
+        }
+
+        .robots .left, .robots .right, .actionbar {
+            border: 10px solid transparent;
+        }
+
+        .colors {
+            display: none;
+            justify-content: space-around;
+            margin: 3rem auto;
+        }
+
+        .countdown {
+            font-size: 10rem;
+            color: red;
+            font-weight: bold;
+            margin: 0 10rem;
+        }
+
+        .highlight {
+            border-color: red !important;
+        }
+
+        .dead { display: none; font-size: 30rem; top: 50%; left: 50%; }
+        .you { font-size: 5rem; font-weight: bold; justify-content: center; margin-top: auto; visibility: hidden; }
+        .start { height: 2rem; width: 10rem; margin: 0 auto;}
+    </style>
+</head>
+<body>
+<div class="main">
+    <h1>SPG - High Tinker Mekkatorque für Farbeblindi</h1>
+    <button class="start">Let's GO BLAST!</button>
+    <div class="robots">
+        <div class="left"><img src=""></div>
+        <div class="countdown"></div>
+        <div class="right"><img src=""></div>
+    </div>
+<!--     <div class="colors">
+        <button class="red">Rot</button>
+        <button class="purple">Violett</button>
+        <button class="green">Grün</button>
+        <button class="yellow">Gelb</button>
+        <button class="blue">Blau</button>
+    </div> -->
+    <div class="you"></div>
+    <div class="actionbar">
+        <img src="./action-bar.png">
+        <button class="red">Rot</button>
+        <button class="purple">Violett</button>
+        <button class="green">Grün</button>
+        <button class="yellow">Gelb</button>
+        <button class="blue">Blau</button>
+    </div>
+</div>
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function (event) {
+        var timeElapsed = 0;
+        var shouldDrawTime = true;
+        var seconds = 0;
+        var totalSeconds = 25;
+        var colors = ['red', 'purple', 'green', 'yellow', 'blue'];
+        var youText = 'Du bisch: {{gameSelf}}';
+
+        // jquery
+        var $main = $('.main');
+        var $countdown = $('.countdown');
+        var $start = $('.start');
+        var $leftRobot = $('.robots .left');
+        var $rightRobot = $('.robots .right');
+        var $actionbar = $('.actionbar')
+        var $colors = $('.colors');
+        var $you = $('.you');
+
+        // choices
+        var playerLeft = null;
+        var playerRight = null;
+        var playerSelf = null;
+        var gameLeft = null;
+        var gameRight = null;
+        var gameSelf = null;
+
+        var dead = false;
+        var round = 0;
+        var turn = 0;
+        var mod = 0;
+
+        function update(delta) {
+            if ((timeElapsed % 1000) + delta > 1000) {
+                seconds++;
+                shouldDrawTime = true;
+            } else {
+                shouldDrawTime = false;
+            }
+
+            timeElapsed += delta;
+
+            if (seconds > 25) { dead = true; MainLoop.stop(); }
+        }
+
+        function draw() {
+            if (shouldDrawTime) {
+                $countdown.text(totalSeconds - seconds);
+            }
+
+            if (gameLeft === null && gameRight === null) {
+                shuffleRobots();
+            }
+
+            if (mod === 2) { 
+                $you.css('visibility', 'visible');
+            } else {
+                $you.css('visibility', 'hidden');
+            }
+            //if (dead) { MainLoop.stop(); window.location = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ&autoplay=1'; }
+        }
+
+        // Checks if player choices match game colors.
+        function check() {
+            if (playerLeft != null) { dead = playerLeft !== gameLeft; } 
+            if (playerRight != null) { dead = playerRight !== gameRight; }
+            if (playerSelf != null) { dead = playerSelf !== gameSelf; }
+
+            if (playerLeft !== null && playerRight !== null && playerSelf !== null && mod === 0) {
+                nextRound();
+            }
+        }
+
+        // randomly picks two robots
+        function shuffleRobots() {
+            var robots = _.shuffle(colors).slice(0, 2);
+            gameLeft = robots[0];
+            gameRight = robots[1];
+            gameSelf = _.shuffle(colors).slice(0, 1)[0];
+            $leftRobot.find('img').attr('src', './' + gameLeft + '.png');
+            $rightRobot.find('img').attr('src', './' + gameRight + '.png');
+            $you.text(youText.replace(/{{gameSelf}}/, gameSelf));
+        }
+
+        function setHighlight() {
+            var targets = $leftRobot.add($rightRobot).add($actionbar);
+            targets.removeClass('highlight');
+            if (mod === 0) { $leftRobot.addClass('highlight') };
+            if (mod === 1) { $rightRobot.addClass('highlight') };
+            if (mod === 2) { $actionbar.addClass('highlight') };
+        }
+
+        // Advance to next round
+        function nextRound() {
+            playerLeft = null;
+            playerRight = null;
+            playerSelf = null;
+            shuffleRobots();
+        }
+
+        // Advance to next robot
+        function nextTurn() {
+            turn++;
+            mod = turn % 3;
+            setHighlight();
+        }
+
+        function pick(color) {
+            if (!MainLoop.isRunning()) { return; }
+            if (mod === 0) { playerLeft = pick; };
+            if (mod === 1) { playerRight = pick; };
+            if (mod === 2) { playerSelf = pick; }
+            nextTurn();
+        }
+
+        // Keybindings
+        Mousetrap.bind('1', function() { pick('red'); });
+        Mousetrap.bind('2', function() { pick('purple'); });
+        Mousetrap.bind('3', function() { pick('green'); });
+        Mousetrap.bind('4', function() { pick('yellow'); });
+        Mousetrap.bind('5', function() { pick('blue'); });
+
+        // START
+        $start.on('click', function () {
+            MainLoop.setUpdate(update).setDraw(draw).setEnd(check).start();
+            $start.hide();
+            $colors.show();
+            setHighlight();
+        });
+
+        // $colors.on('click', 'button', function () {
+        //     console.log('round', round, 'turn', turn, 'mod', mod);
+        //     var pick = $(this).attr('class');
+
+        //     nextTurn();
+        // });
+
+        $actionbar.on('click', 'button', function () {
+            var color = $(this).attr('class');
+            pick(color);
+        });
+
+    });
+</script>
+</body>
+</html>
