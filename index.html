@@ -76,7 +76,7 @@
 </head>
 <body>
 <div class="main">
-    <h1>SPG - High Tinker Mekkatorque für Farbeblindi</h1>
+    <h1>SPG - High Tinker Mekkatorque für Farbeblindi / Retards <span style="font-size: 0.25rem;">(Pachinis)</span></h1>
     <button class="start">Let's GO BLAST!</button>
     <div class="robots">
         <div class="left"><img src=""></div>
@@ -187,8 +187,8 @@
             gameLeft = robots[0];
             gameRight = robots[1];
             gameSelf = _.shuffle(colors).slice(0, 1)[0];
-            $leftRobot.find('img').attr('src', './' + gameLeft + '.png');
-            $rightRobot.find('img').attr('src', './' + gameRight + '.png');
+            $leftRobot.find('img').attr('src', './' + gameLeft + getRandomInt(3) + '.png');
+            $rightRobot.find('img').attr('src', './' + gameRight + getRandomInt(3) + '.png');
             $you.text(youText.replace(/{{gameSelf}}/, gameSelf));
         }
 
@@ -238,6 +238,10 @@
             MainLoop.stop();
             $main.hide();
             $('.lose').show();
+        }
+
+        function getRandomInt(max) {
+            return Math.floor(Math.random() * Math.floor(max));
         }
 
         // Keybindings
