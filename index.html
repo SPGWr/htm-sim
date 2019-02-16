@@ -10,12 +10,15 @@
         body { background-color: darkgrey; } 
         div { display: flex; } 
 
-        .main {
+        .main, .win, .lose {
             position: relative;
             flex-direction: column;
             justify-content: center;
             height: 100vh;
         }
+
+        .win img, .lose img, .win button, .lose button { margin: 0 auto; }
+        .win img, .lose img { margin-bottom: 2rem; }
 
         .actionbar {
             position: relative;
@@ -68,6 +71,7 @@
         .dead { display: none; font-size: 30rem; top: 50%; left: 50%; }
         .you { font-size: 5rem; font-weight: bold; justify-content: center; margin-top: auto; visibility: hidden; }
         .start { height: 2rem; width: 10rem; margin: 0 auto;}
+        h1 { text-align: center; }
     </style>
 </head>
 <body>
@@ -79,13 +83,6 @@
         <div class="countdown"></div>
         <div class="right"><img src=""></div>
     </div>
-<!--     <div class="colors">
-        <button class="red">Rot</button>
-        <button class="purple">Violett</button>
-        <button class="green">Grün</button>
-        <button class="yellow">Gelb</button>
-        <button class="blue">Blau</button>
-    </div> -->
     <div class="you"></div>
     <div class="actionbar">
         <img src="./action-bar.png">
@@ -95,6 +92,14 @@
         <button class="yellow">Gelb</button>
         <button class="blue">Blau</button>
     </div>
+</div>
+<div class="win" style="display: none;">
+    <img src="./winner.jpg">
+    <button class="play-again">Play again!</button>
+</div>
+<div class="lose" style="display: none">
+    <img src="./loser.jpg">
+    <button class="play-again">Play again!</button>
 </div>
 <script type="text/javascript">
     document.addEventListener('DOMContentLoaded', function (event) {
@@ -114,6 +119,7 @@
         var $actionbar = $('.actionbar')
         var $colors = $('.colors');
         var $you = $('.you');
+        var $playAgain = $('.play-again');
 
         // choices
         var playerLeft = null;
@@ -124,9 +130,11 @@
         var gameSelf = null;
 
         var dead = false;
+        var success = false;
         var round = 0;
         var turn = 0;
         var mod = 0;
+        var roundsToPlay = 4;
 
         function update(delta) {
             if ((timeElapsed % 1000) + delta > 1000) {
@@ -155,7 +163,9 @@
             } else {
                 $you.css('visibility', 'hidden');
             }
-            //if (dead) { MainLoop.stop(); window.location = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ&autoplay=1'; }
+
+            if (round === roundsToPlay) { $actionbar.find('img').attr('src', './action-bar-exit.png'); }
+            if (dead) { lose(); }
         }
 
         // Checks if player choices match game colors.
@@ -167,6 +177,8 @@
             if (playerLeft !== null && playerRight !== null && playerSelf !== null && mod === 0) {
                 nextRound();
             }
+            console.log(gameLeft, gameRight, gameSelf);
+            console.log(playerLeft, playerRight, playerSelf);
         }
 
         // randomly picks two robots
@@ -193,6 +205,7 @@
             playerLeft = null;
             playerRight = null;
             playerSelf = null;
+            round++;
             shuffleRobots();
         }
 
@@ -205,10 +218,26 @@
 
         function pick(color) {
             if (!MainLoop.isRunning()) { return; }
-            if (mod === 0) { playerLeft = pick; };
-            if (mod === 1) { playerRight = pick; };
-            if (mod === 2) { playerSelf = pick; }
+            if (round === roundsToPlay) { win(); }
+            if (mod === 0) { playerLeft = color; };
+            if (mod === 1) { playerRight = color; };
+            if (mod === 2) { playerSelf = color; }
             nextTurn();
+        }
+
+        // Win the game
+        function win() {
+            success = true;
+            $main.hide();
+            $('.win').show();
+            MainLoop.stop();
+        }
+
+        // Lose the game
+        function lose() {
+            MainLoop.stop();
+            $main.hide();
+            $('.lose').show();
         }
 
         // Keybindings
@@ -226,18 +255,12 @@
             setHighlight();
         });
 
-        // $colors.on('click', 'button', function () {
-        //     console.log('round', round, 'turn', turn, 'mod', mod);
-        //     var pick = $(this).attr('class');
-
-        //     nextTurn();
-        // });
-
         $actionbar.on('click', 'button', function () {
             var color = $(this).attr('class');
             pick(color);
         });
 
+        $playAgain.on('click', function () { window.location.reload(); });
     });
 </script>
 </body>
