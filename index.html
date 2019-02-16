@@ -6,6 +6,20 @@
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.11/lodash.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mousetrap@1.6.2/mousetrap.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/5.8.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/5.8.2/firebase-database.js"></script>
+    <script>
+      // Initialize Firebase
+      var config = {
+        apiKey: "AIzaSyB16dgsNxx6P-fc8stpFiFkoRg5OCQ4-vU",
+        authDomain: "htm-sim.firebaseapp.com",
+        databaseURL: "https://htm-sim.firebaseio.com",
+        projectId: "htm-sim",
+        storageBucket: "htm-sim.appspot.com",
+        messagingSenderId: "1029094393623"
+      };
+      firebase.initializeApp(config);
+    </script>
     <style type="text/css">
         body { background-color: darkgrey; } 
         div { display: flex; } 
@@ -51,12 +65,6 @@
             border: 10px solid transparent;
         }
 
-        .colors {
-            display: none;
-            justify-content: space-around;
-            margin: 3rem auto;
-        }
-
         .countdown {
             font-size: 10rem;
             color: red;
@@ -64,20 +72,29 @@
             margin: 0 10rem;
         }
 
-        .highlight {
-            border-color: red !important;
-        }
-
+        .highlight {border-color: red !important; }
+        .signup { flex-direction: column; margin: 1rem auto; }
+        .player { font-weight: bold; }
+        .player input { margin-left: 1rem; }
         .dead { display: none; font-size: 30rem; top: 50%; left: 50%; }
         .you { font-size: 5rem; font-weight: bold; justify-content: center; margin-top: auto; visibility: hidden; }
-        .start { height: 2rem; width: 10rem; margin: 0 auto;}
+        .start { height: 2rem; width: 100%; margin: 2rem 0;}
         h1 { text-align: center; }
+        .leaderboard { align-items: center; flex-direction: column; margin: 0 auto; }
+        .leaderboard ul { list-style: none; padding: 0; width: 100%; text-align: right; }
     </style>
 </head>
 <body>
 <div class="main">
     <h1>SPG - High Tinker Mekkatorque für Farbeblindi / Retards <span style="font-size: 0.25rem;">(Pachinis)</span></h1>
-    <button class="start">Let's GO BLAST!</button>
+    <div class="signup">
+        <div class="player">Spieler*: <input type="text" name="name" id="name" /></div>
+        <button class="start">Let's GO BLAST!</button>
+    </div>
+    <div class="leaderboard">
+        <h2>Leaderboard a.k.a MINI LOGS <span style="font-size: 0.5rem;">(live)</span></h2>
+        <ul></ul>
+    </div>
     <div class="robots">
         <div class="left"><img src=""></div>
         <div class="countdown"></div>
@@ -95,11 +112,11 @@
 </div>
 <div class="win" style="display: none;">
     <img src="./winner.jpg">
-    <button class="play-again">Play again!</button>
+    <button class="play-again">Play again! / MINI LOGS</button>
 </div>
 <div class="lose" style="display: none">
     <img src="./loser.jpg">
-    <button class="play-again">Play again!</button>
+    <button class="play-again">Play again! / MINI LOGS</button>
 </div>
 <script type="text/javascript">
     document.addEventListener('DOMContentLoaded', function (event) {
@@ -116,10 +133,11 @@
         var $start = $('.start');
         var $leftRobot = $('.robots .left');
         var $rightRobot = $('.robots .right');
-        var $actionbar = $('.actionbar')
-        var $colors = $('.colors');
+        var $actionbar = $('.actionbar');
         var $you = $('.you');
         var $playAgain = $('.play-again');
+        var $name = $('#name');
+        var $leaderboard = $('.leaderboard ul');
 
         // choices
         var playerLeft = null;
@@ -135,6 +153,9 @@
         var turn = 0;
         var mod = 0;
         var roundsToPlay = 4;
+
+        // leaderboard database
+        var database = firebase.database().ref('leaderboard');
 
         function update(delta) {
             if ((timeElapsed % 1000) + delta > 1000) {
@@ -231,6 +252,7 @@
             $main.hide();
             $('.win').show();
             MainLoop.stop();
+            saveScore();
         }
 
         // Lose the game
@@ -244,6 +266,34 @@
             return Math.floor(Math.random() * Math.floor(max));
         }
 
+        // Logs
+        function saveScore() {
+            database.push({
+                name: $name.val().trim(),
+                score: timeElapsed,
+                timestamp: new Date().getTime()
+            });
+        }
+
+        function addLeaderboardEntry(name, score) {
+            $leaderboard.append(
+                '<li>{{name}}: <strong>{{score}}</strong></li>'
+                .replace(/{{name}}/, name)
+                .replace(/{{score}}/, msToTime(score)));
+        }
+
+        // credits: https://stackoverflow.com/a/9763769
+        function msToTime(s) {
+        // Pad to 2 or 3 digits, default is 2
+          var pad = (n, z = 2) => ('00' + n).slice(-z);
+          // pad(s/3.6e6|0) + ':' + pad((s%3.6e6)/6e4 | 0) + ':' + 
+          return pad((s%6e4)/1000|0) + '.' + pad(s%1000, 3);
+        }
+
+        database.orderByChild('score').limitToFirst(10).on('child_added', function (data) {
+            addLeaderboardEntry(data.val().name, data.val().score);
+        })
+
         // Keybindings
         Mousetrap.bind('1', function() { pick('red'); });
         Mousetrap.bind('2', function() { pick('purple'); });
@@ -253,9 +303,9 @@
 
         // START
         $start.on('click', function () {
+            if ('' === $name.val().trim()) { return };
             MainLoop.setUpdate(update).setDraw(draw).setEnd(check).start();
-            $start.hide();
-            $colors.show();
+            $start.add($leaderboard).hide();
             setHighlight();
         });
 
