@@ -279,15 +279,7 @@
             $leaderboard.append(
                 '<li>{{name}}: <strong>{{score}}</strong></li>'
                 .replace(/{{name}}/, name)
-                .replace(/{{score}}/, msToTime(score)));
-        }
-
-        // credits: https://stackoverflow.com/a/9763769
-        function msToTime(s) {
-        // Pad to 2 or 3 digits, default is 2
-          var pad = (n, z = 2) => ('00' + n).slice(-z);
-          // pad(s/3.6e6|0) + ':' + pad((s%3.6e6)/6e4 | 0) + ':' + 
-          return pad((s%6e4)/1000|0) + '.' + pad(s%1000, 3);
+                .replace(/{{score}}/, Math.trunc(score) / 1000));
         }
 
         database.orderByChild('score').limitToFirst(10).on('child_added', function (data) {
