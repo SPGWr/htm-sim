@@ -88,7 +88,7 @@
 <div class="main">
     <h1>SPG - High Tinker Mekkatorque für Farbeblindi / Retards <span style="font-size: 0.25rem;">(Pachinis)</span></h1>
     <div class="signup">
-        <div class="player">Spieler*: <input type="text" name="name" id="name" /></div>
+        <div class="player">Spieler*: <input type="text" name="name" id="name" maxlength="32" /></div>
         <button class="start">Let's GO BLAST!</button>
     </div>
     <div class="leaderboard">
@@ -158,6 +158,7 @@
         var database = firebase.database().ref('leaderboard');
 
         function update(delta) {
+            console.log(delta)
             if ((timeElapsed % 1000) + delta > 1000) {
                 seconds++;
                 shouldDrawTime = true;
@@ -279,7 +280,12 @@
             $leaderboard.append(
                 '<li>{{name}}: <strong>{{score}}</strong></li>'
                 .replace(/{{name}}/, name)
-                .replace(/{{score}}/, Math.trunc(score) / 1000));
+                .replace(/{{score}}/, formatScore(score)));
+        }
+
+        function formatScore(s) {
+            var str = Math.round(s) + '';
+            return Math.trunc(s / 1000) + '.' + str.slice(-3);
         }
 
         database.orderByChild('score').limitToFirst(10).on('child_added', function (data) {
