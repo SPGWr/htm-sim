@@ -80,8 +80,9 @@
         .you { font-size: 5rem; font-weight: bold; justify-content: center; margin-top: auto; visibility: hidden; }
         .start { height: 2rem; width: 100%; margin: 2rem 0;}
         h1 { text-align: center; }
-        .leaderboard { align-items: center; flex-direction: column; margin: 0 auto; }
-        .leaderboard ul { list-style: none; padding: 0; width: 100%; text-align: right; }
+        .leaderboard { align-items: center; flex-wrap: wrap; margin: 0 auto; justify-content: space-between; }
+        .leaderboard h2 { width: 100%; }
+        .leaderboard ul { list-style: none; padding: 0; text-align: right; }
     </style>
 </head>
 <body>
@@ -93,7 +94,8 @@
     </div>
     <div class="leaderboard">
         <h2>Leaderboard a.k.a MINI LOGS <span style="font-size: 0.5rem;">(live)</span></h2>
-        <ul></ul>
+        <ul class="top"><li>DIE BESCHTE 10</li></ul>
+        <ul class="recent"><li>DIE 10 WO ZLETSCHT GSPILLT HÄND</li></ul>
     </div>
     <div class="robots">
         <div class="left"><img src=""></div>
@@ -137,7 +139,7 @@
         var $you = $('.you');
         var $playAgain = $('.play-again');
         var $name = $('#name');
-        var $leaderboard = $('.leaderboard ul');
+        var $leaderboard = $('.leaderboard');
 
         // choices
         var playerLeft = null;
@@ -276,8 +278,8 @@
             });
         }
 
-        function addLeaderboardEntry(name, score) {
-            $leaderboard.append(
+        function addLeaderboardEntry(clazz, name, score, ts) {
+            $leaderboard.find('ul' + clazz).append(
                 '<li>{{name}}: <strong>{{score}}</strong></li>'
                 .replace(/{{name}}/, name)
                 .replace(/{{score}}/, formatScore(score)));
@@ -288,9 +290,15 @@
             return Math.trunc(s / 1000) + '.' + str.slice(-3);
         }
 
+        // fetch top 10 entries (by score)
         database.orderByChild('score').limitToFirst(10).on('child_added', function (data) {
-            addLeaderboardEntry(data.val().name, data.val().score);
+            addLeaderboardEntry('.top', data.val().name, data.val().score);
         })
+
+        // fetch most recent 10 entries (by timestamp)
+        database.orderByChild('timestamp').limitToLast(10).on('child_added', function (data) {
+            addLeaderboardEntry('.recent', data.val().name, data.val().score, data.val().timestamp);
+        });
 
         // Keybindings
         Mousetrap.bind('1', function() { pick('red'); });
