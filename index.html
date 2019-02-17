@@ -283,13 +283,17 @@
         function addLeaderboardEntry(clazz, name, score, ts) {
             $leaderboard.find('ul' + clazz).append(
                 '<li>{{name}}: <strong>{{score}}</strong></li>'
-                .replace(/{{name}}/, name)
+                .replace(/{{name}}/, escape(name))
                 .replace(/{{score}}/, formatScore(score)));
         }
 
         function formatScore(s) {
             var str = Math.round(s) + '';
             return Math.trunc(s / 1000) + '.' + str.slice(-3);
+        }
+
+        function escape(s) {
+            return $('<div>').text(s).html();
         }
 
         // fetch top 10 entries (by score)
